@@ -4,7 +4,7 @@ import os
 def display_board(board, score):
     os.system('clear')
     prompt(f"You are {X_MARKER}. Computer is {O_MARKER}.")
-    prompt(f'Score: P - {score['Player']} C - {score['Computer']}')
+    prompt(f"Score: P - {score['Player']} C - {score['Computer']}")
     print('     |     |')
     print(f'  {board[0]}  |  {board[1]}  |  {board[2]}')
     print('     |     |')
@@ -42,7 +42,11 @@ def player_chooses_square(board):
     while True:
         valid_choices = [str(num + 1) for num in empty_squares(board)]
         prompt(f'Choose a square ({join_or(valid_choices)}):')
-        square = int(input().strip())
+        try:
+            square = int(input().strip())
+        except ValueError:
+            prompt("Sorry, that's not a valid choice.")
+            continue
         if str(square) in valid_choices:
             break
 
@@ -56,16 +60,19 @@ def computer_chooses_square(board):
     square = None
     for line in WINNING_LINES:
         square = immediate_threat(line, board, O_MARKER)
-        if square:
+        if square != None:
             break
-    if not square:
+    if square == None:
         for line in WINNING_LINES:
             square = immediate_threat(line, board, X_MARKER)
-            if square:
+            if square != None:
                 break
     
-    if not square:
-        square = random.choice(empty_squares(board))
+    if square == None:
+        if 4 in empty_squares(board):
+            square = 4
+        else:    
+            square = random.choice(empty_squares(board))
 
     board[square] = O_MARKER
 
@@ -107,19 +114,25 @@ WINNING_LINES = [
         [0, 4, 8], [2, 4, 6]
     ]
 
+def choose_square(board, current_player):
+    if current_player == 'Player':
+        player_chooses_square(board)
+    else: 
+        computer_chooses_square(board)
+def alternate_player(current_player):
+    if current_player == 'Player':
+        return 'Computer'
+    else:
+        return 'Player'
 def play_tic_tac_toe():
     score = {'Player': 0, 'Computer': 0}
     while True:
         board = [' '] * 9
-
+        current_player = 'Player'
         while True:
             display_board(board, score)
-
-            player_chooses_square(board)
-            if someone_won(board) or board_full(board):
-                break
-
-            computer_chooses_square(board)
+            choose_square(board, current_player)
+            current_player = alternate_player(current_player)
             if someone_won(board) or board_full(board):
                 break
 
@@ -134,10 +147,15 @@ def play_tic_tac_toe():
                 score['Player'] = score['Computer'] = 0
         else:
             prompt("It's a tie!")
-        prompt("Play again? (y or n)")
-        answer = input().lower()
 
-        if answer[0] != 'y':
+        while True:
+            prompt("Play again? (y or n)")
+            answer = input().strip().lower()
+
+            if answer == 'y' or answer == 'n':
+                break
+            prompt("That's not a valid choice")
+        if answer != 'y':
             break
     
     prompt('Thanks for playing Tic Tac Toe!')
