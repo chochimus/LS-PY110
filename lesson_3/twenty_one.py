@@ -2,6 +2,8 @@ import random
 import os
 import time
 
+#TODO add play again, best of 5, input handling on play again
+
 def display_hand(h1, h2, first_turn=False):
     os.system('clear')
     if first_turn:
@@ -139,7 +141,7 @@ while True:
             print("You hit 21! Dealers turn...")
             time.sleep(1)
             break
-        choice = input("hit or stay? (h or s)")
+        choice = input("hit or stay? (h or s)").strip().lower()
         if choice not in ['h', 's']:
             print("Sorry, must enter 'h' or 's'.")
             continue
