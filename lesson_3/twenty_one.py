@@ -2,12 +2,6 @@ import random
 import os
 import time
 
-SUITE_MAP = {
-    'C':'♣',
-    'H':'♥',
-    'S':'♠',
-    'D':'♦'
-}
 def display_hand(h1, h2, first_turn=False):
     os.system('clear')
     if first_turn:
@@ -18,16 +12,16 @@ def display_hand(h1, h2, first_turn=False):
         dealerline1 = '|        '
         dealerline2 = '|________'
 
-        for i in range(len(h2)):
-            dealerline1 += ' ' + SUITE_MAP[h2[i][0]] + '|'
-            dealerline2 += str(h2[i][1]).rjust(2,'_') + '|'
+        for card in h2:
+            dealerline1 += ' ' + SUITE_MAP[card[0]] + '|'
+            dealerline2 += str(card[1]).rjust(2,'_') + '|'
 
     line1 = ''
     line2 = '|'
     line3 = '|'
-    for i in range(len(h1)):
-        value = str(h1[i][1]).ljust(2)
-        suit = SUITE_MAP[h1[i][0]]
+    for i, card in enumerate(h1):
+        value = str(card[1]).ljust(2)
+        suit = SUITE_MAP[card[0]]
 
         if i == len(h1) - 1:
             line1 += '_' * 11
@@ -45,8 +39,10 @@ def display_hand(h1, h2, first_turn=False):
     print(line2)
     print(line3)
 
-def shuffle_deck(deck):
+def initialize_deck():
+    deck = [[suite, value ] for suite in SUITES for value in VALUES]
     random.shuffle(deck)
+    return deck
 
 def deal_cards(deck):
     player_hand = []
@@ -68,86 +64,113 @@ def total_hand(cards):
             sum_val += 10
         else:
             sum_val += int(value)
-    
+
     aces = values.count("A")
     while sum_val > 21 and aces:
         sum_val -= 10
         aces -= 1
-    
+
     return sum_val
 
-def busted(cards):
-    return total_hand(cards) > 21
+def busted(total):
+    return total > 21
 
-def hit(cards):
-    return deck.pop()
+def play_again():
+    print("----")
+    answer = input("Do you want to play again? (y or n)")
+    return answer == 'y'
+
+def check_win(player_total, dealer_total):
+    if player_total > 21:
+        return "P_BUST"
+    elif dealer_total > 21:
+        return "D_BUST"
+    elif player_total < dealer_total:
+        return "D"
+    elif player_total > dealer_total:
+        return "P"
+    else:
+        return "T"
+        
+def display_win(player_total, dealer_total):
+    results = check_win(player_total, dealer_total)
+    
+    match results:
+        case "P_BUST":
+            print("You busted, dealer wins!")
+        case "D_BUST":
+            print("Dealer busted, you win!")
+        case "P":
+            print("You win!")
+        case "D":
+            print("Dealer wins!")
+        case "T":
+            print("You tied!")
 
 SUITES = ['H', 'S', 'D', 'C']
 VALUES = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K']
-
-
-deck = [[suite, value ] for suite in SUITES for value in VALUES]
-
-shuffle_deck(deck)
-player_hand, dealer_hand = deal_cards(deck)
+SUITE_MAP = {
+    'C':'♣',
+    'H':'♥',
+    'S':'♠',
+    'D':'♦'
+}
+WIN_CON = 21
+DEALER_LIMIT = 17
 
 while True:
     player_busted = False
     dealer_busted = False
+    deck = initialize_deck()
+    player_hand, dealer_hand = deal_cards(deck)
+    player_total = total_hand(player_hand)
+    dealer_total = total_hand(dealer_hand)
     display_hand(player_hand, dealer_hand, True)
-    if total_hand(player_hand) == 21 and total_hand(dealer_hand) == 21:
-        display_hand(player_hand, dealer_hand)
-        print("You tied!")
+
+    if player_total == WIN_CON or dealer_total == WIN_CON:
+        if dealer_total == WIN_CON:
+            display_hand(player_hand, dealer_hand)
+        display_win(player_total, dealer_total)
         break
-    elif total_hand(player_hand) == 21:
-        print("You won!")
-        break
-    elif total_hand(dealer_hand) == 21:
-        display_hand(player_hand, dealer_hand)
-        print("Dealer won!")
-        break
+    
 
     while True:
-        if total_hand(player_hand) == 21:
+        if player_total == WIN_CON:
             print("You hit 21! Dealers turn...")
             time.sleep(1)
             break
         choice = input("hit or stay? (h or s)")
+        if choice not in ['h', 's']:
+            print("Sorry, must enter 'h' or 's'.")
+            continue
         if choice == 's':
             break
-        player_hand.append(hit(player_hand))
-        if busted(player_hand):
+        player_hand.append(deck.pop())
+        player_total = total_hand(player_hand)
+        if busted(player_total):
             player_busted = True
             break
         display_hand(player_hand, dealer_hand, True)
     if player_busted:
-        display_hand(player_hand, dealer_hand, True)
-        print("You busted, dealer wins!")
+        display_hand(player_hand, dealer_hand)
+        display_win(player_total, dealer_total)
         break
     else:
-        print("You chose to stay.")
+        print(f"You chose to stay at {player_total}.")
         time.sleep(1)
 
     display_hand(player_hand, dealer_hand)
     time.sleep(1)
-    while total_hand(dealer_hand) < 17:
-        dealer_hand.append(hit(dealer_hand))
-        if busted(dealer_hand):
-            dealer_busted = True
-            break
+    while dealer_total < 17:
+        dealer_hand.append(deck.pop())
+        dealer_total = total_hand(dealer_hand)
         display_hand(player_hand, dealer_hand)
-        time.sleep(2)
-    if dealer_busted:
+        time.sleep(1)
+    if busted(dealer_total):
         display_hand(player_hand, dealer_hand)
-        print("You win!")
+        display_win(player_total, dealer_total)
         break
-    else:
-        if total_hand(player_hand) > total_hand(dealer_hand):
-            print("You win!")
-            break
-        elif total_hand(player_hand) == total_hand(dealer_hand):
-            print("You tied!")
-            break
-        else:
-            print("Dealer wins!")
-            break
+
+    print(f"Dealer stays at {dealer_total}")
+    display_win(player_total, dealer_total)
+    break
